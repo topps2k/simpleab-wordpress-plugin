@@ -1,0 +1,47 @@
+# Copyright (C) 2023 Captchify
+# This file is distributed under the same license as the Simple A/B plugin.
+msgid ""
+msgstr ""
+"Project-Id-Version: Simple A/B 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/simpleab\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2023-05-21T12:00:00+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.5.0\n"
+"X-Domain: simpleab\n"
+
+#. Plugin Name of the plugin
+msgid "Simple A/B"
+msgstr ""
+
+#. Plugin URI of the plugin
+msgid "https://www.captchify.com"
+msgstr ""
+
+#. Description of the plugin
+msgid "A WordPress plugin that wraps the SimpleAB JavaScript SDK for A/B/n testing."
+msgstr ""
+
+#. Author of the plugin
+msgid "Captchify"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://www.captchify.com"
+msgstr ""
+
+#: simpleab-admin.php:29
+msgid "Enter your SimpleAB API settings below:"
+msgstr ""
+
+#: simpleab-admin.php:35
+msgid "API URL"
+msgstr ""
+
+#: simpleab-admin.php:41
+msgid "API Key"
+msgstr ""

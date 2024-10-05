@@ -1,0 +1,34 @@
+/* SimpleAB Admin Styles */
+
+.wrap {
+    max-width: 800px;
+}
+
+.simpleab-settings h1 {
+    margin-bottom: 20px;
+}
+
+.simpleab-settings .form-table th {
+    width: 200px;
+}
+
+.simpleab-settings input[type="text"] {
+    width: 300px;
+}
+
+.simpleab-settings .submit {
+    margin-top: 20px;
+}
+
+/* Front-end styles for A/B test variants */
+.simpleab-experiment {
+    position: relative;
+}
+
+.simpleab-variant {
+    display: none;
+}
+
+.simpleab-variant.active {
+    display: block;
+}
