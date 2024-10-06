@@ -16,5 +16,4 @@ All notable changes to the Simple A/B WordPress plugin will be documented in thi
 - Initial release of the Simple A/B WordPress plugin.
 - Support for A/B/n testing using shortcodes.
 - Admin settings page for API configuration.
-- Internationalization support.
 - Uninstall script for clean removal of plugin data.

@@ -22,6 +22,18 @@ Key features:
 * Client-side metric tracking
 * PHP functions for advanced usage
 
+== Third-Party Service Usage ==
+
+This plugin relies on the Captchify's Simple A/B service (https://captchify.com) for A/B testing functionality. When you use this plugin, data related to your A/B tests will be sent to and processed by Captchify's servers. This includes experiment configurations, variant assignments, and metric data.
+
+This is achieve by api calls to various endpoint under https://api.captchify.com
+
+For more information about how your data is handled, please review:
+* Captchify Terms of Service: https://captchify.com/terms
+* Captchify Privacy Policy: https://captchify.com/privacy
+
+By using this plugin, you agree to the terms and conditions set forth by Captchify.
+
 == Installation ==
 
 1. Upload the plugin files to the `/wp-content/plugins/simpleab` directory, or install the plugin through the WordPress plugins screen directly.
@@ -91,7 +103,6 @@ No, this plugin is specifically designed to work with the SimpleAB service.
 * Added: Initial release of the Simple A/B WordPress plugin.
 * Added: Support for A/B/n testing using shortcodes.
 * Added: Admin settings page for API configuration.
-* Added: Internationalization support.
 * Added: Uninstall script for clean removal of plugin data.
 
 == Upgrade Notice ==

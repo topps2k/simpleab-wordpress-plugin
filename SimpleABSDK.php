@@ -2,8 +2,6 @@
 
 namespace SimpleAB\SDK;
 
-require_once 'md5.php';
-
 class BaseAPIUrls {
     const CAPTCHIFY_NA = 'https://api.captchify.com';
 }
@@ -194,7 +192,7 @@ class SimpleABSDK {
     }
 
     private function calculateHash($input) {
-        return md5($input);
+        return hash('md5', $input);
     }
 
     private function isInExposureBucket($hash, $exposure) {

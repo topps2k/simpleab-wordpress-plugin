@@ -17,15 +17,15 @@ if (!defined('WPINC')) {
 }
 
 // Define plugin constants
-define('SIMPLEAB_VERSION', '1.1.0');
-define('SIMPLEAB_PLUGIN_DIR', plugin_dir_path(__FILE__));
-define('SIMPLEAB_PLUGIN_URL', plugin_dir_url(__FILE__));
+define('CAPTCHIFY_SIMPLEAB_VERSION', '1.1.0');
+define('CAPTCHIFY_SIMPLEAB_PLUGIN_DIR', plugin_dir_path(__FILE__));
+define('CAPTCHIFY_SIMPLEAB_PLUGIN_URL', plugin_dir_url(__FILE__));
 
 // Include SimpleAB PHP SDK
-require_once SIMPLEAB_PLUGIN_DIR . 'SimpleABSDK.php';
+require_once CAPTCHIFY_SIMPLEAB_PLUGIN_DIR . 'SimpleABSDK.php';
 
 // Include admin functions
-require_once SIMPLEAB_PLUGIN_DIR . 'simpleab-admin.php';
+require_once CAPTCHIFY_SIMPLEAB_PLUGIN_DIR . 'captchify-simple-ab-admin.php';
 
 // Debug logging function
 function simpleab_debug_log($message) {
@@ -40,7 +40,7 @@ function simpleab_debug_log($message) {
 
 // Initialize SimpleAB SDK
 function simpleab_init_sdk() {
-    $simpleab_options = get_option('simpleab_options');
+    $simpleab_options = get_option('captchify-simple-ab-options');
     $api_key = isset($simpleab_options['api_key']) ? sanitize_text_field($simpleab_options['api_key']) : '';
     $api_url = 'https://api.captchify.com'; // Add option later for multi-region support
 
@@ -58,7 +58,7 @@ add_action('init', 'simpleab_init_sdk');
 function simpleab_enqueue_styles($hook) {
     // Only enqueue on the SimpleAB settings page
     if ('settings_page_simpleab' === $hook) {
-        wp_enqueue_style('simpleab-css', SIMPLEAB_PLUGIN_URL . 'css/simpleab-admin.css', array(), SIMPLEAB_VERSION);
+        wp_enqueue_style('simpleab-css', CAPTCHIFY_SIMPLEAB_PLUGIN_URL . 'css/simpleab-admin.css', array(), CAPTCHIFY_SIMPLEAB_VERSION);
     }
 }
 add_action('admin_enqueue_scripts', 'simpleab_enqueue_styles');
@@ -78,7 +78,8 @@ function simpleab_ab_test_shortcode($atts, $content = null) {
         'allocation_key' => is_user_logged_in() ? (string)get_current_user_id() : (isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : ''),
     ), $atts);
 
-    simpleab_debug_log($a);
+    // Register and enqueue the script
+    wp_register_script('simpleab-metric-script', CAPTCHIFY_SIMPLEAB_PLUGIN_URL . 'js/simpleab-metric.js', array(), CAPTCHIFY_SIMPLEAB_VERSION, true);
 
     // Get treatment using PHP SDK
     try {
@@ -99,26 +100,10 @@ function simpleab_ab_test_shortcode($atts, $content = null) {
                     data-experiment-id='" . esc_attr($a['experiment_id']) . "'
                     data-stage='" . esc_attr($a['stage']) . "'
                     data-dimension='" . esc_attr($a['dimension']) . "'
-                    data-allocation-key='" . esc_attr($a['allocation_key']) . "'>";
+                    data-treatment='" . esc_attr($treatment) . "'>";
 
     if (!is_null($content)) {
         $variants = explode('||', $content);
-
-        // Track impression
-        try {
-            $simpleab_sdk->trackMetric([
-                'experimentID' => $a['experiment_id'],
-                'stage' => $a['stage'],
-                'dimension' => $a['dimension'],
-                'treatment' => $treatment,
-                'metricName' => 'impression',
-                'metricValue' => 1,
-                'aggregationType' => 'sum'
-            ]);
-            simpleab_debug_log("Impression tracked successfully");
-        } catch (Exception $e) {
-            simpleab_debug_log("Error tracking impression: " . $e->getMessage());
-        }
 
         // Generate HTML for each variant
         foreach ($variants as $index => $variant) {
@@ -130,26 +115,16 @@ function simpleab_ab_test_shortcode($atts, $content = null) {
 
     $output .= "</div>";
 
-    // JavaScript for client-side metric tracking
-    $output .= "<script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.simpleab-experiment [data-simpleab-metric]').forEach(function(element) {
-                var metricName = element.dataset.simpleabMetric;
-                var aggregationType = element.dataset.simpleabAggregation || 'sum';
-                var metricValue = parseFloat(element.dataset.simpleabValue) || 1;
-                var events = element.dataset.simpleabEvents ? element.dataset.simpleabEvents.split(',') : ['click'];
+    // Localize script with necessary data
+    $script_data = array(
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('simpleab_track_metric')
+    );
 
-                events.forEach(function(eventType) {
-                    element.addEventListener(eventType.trim(), function() {
-                        var xhr = new XMLHttpRequest();
-                        xhr.open('POST', '" . esc_js(admin_url('admin-ajax.php')) . "', true);
-                        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                        xhr.send('action=simpleab_track_metric&_wpnonce=" . wp_create_nonce('simpleab_track_metric') . "&experiment_id=" . esc_js($a['experiment_id']) . "&stage=" . esc_js($a['stage']) . "&dimension=" . esc_js($a['dimension']) . "&treatment=" . esc_js($treatment) . "&metric_name=' + encodeURIComponent(metricName) + '&metric_value=' + metricValue + '&aggregation_type=' + encodeURIComponent(aggregationType));
-                    });
-                });
-            });
-        });
-    </script>";
+    wp_localize_script('simpleab-metric-script', 'simpleab_data', $script_data);
+
+    // Enqueue the script
+    wp_enqueue_script('simpleab-metric-script');
 
     // Restore wpautop after processing the shortcode
     add_filter('the_content', 'wpautop');
@@ -160,6 +135,18 @@ function simpleab_ab_test_shortcode($atts, $content = null) {
     return $filtered;
 }
 add_shortcode('simpleab_test_custom', 'simpleab_ab_test_shortcode');
+
+function get_user_ip() {
+    if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
+        $ip = sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR']));
+    } elseif (isset($_SERVER['REMOTE_ADDR'])) {
+        $ip = sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR']));
+    } else {
+        $ip = '';
+    }
+    return $ip;
+}
+
 
 // Shortcode for A/B/n test with dynamic allocation key and metric tracking
 function simpleab_segment_shortcode($atts, $content = null) {
@@ -175,10 +162,13 @@ function simpleab_segment_shortcode($atts, $content = null) {
         'allocation_key' => is_user_logged_in() ? (string)get_current_user_id() : (isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : ''),
     ), $atts);
 
+    // Register and enqueue the script
+    wp_register_script('simpleab-segment-metric-script', CAPTCHIFY_SIMPLEAB_PLUGIN_URL . 'js/simpleab-segment-metric.js', array(), CAPTCHIFY_SIMPLEAB_VERSION, true);
+
     // Get segment using PHP SDK
     try {
         $segment = $simpleab_sdk->getSegment([
-            'ip' => isset($_SERVER['REMOTE_ADDR']) ? sanitize_text_field(wp_unslash($_SERVER['REMOTE_ADDR'])) : '',
+            'ip' => get_user_ip(),
             'userAgent' => isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : ''
         ]);
 
@@ -206,26 +196,10 @@ function simpleab_segment_shortcode($atts, $content = null) {
                     data-experiment-id='" . esc_attr($a['experiment_id']) . "'
                     data-stage='" . esc_attr($a['stage']) . "'
                     data-segment='" . esc_attr(wp_json_encode($segment)) . "'
-                    data-allocation-key='" . esc_attr($a['allocation_key']) . "'>";
+                    data-treatment='" . esc_attr($treatment) . "'>";
 
     if (!is_null($content)) {
         $variants = explode('||', $content);
-
-        // Track impression
-        try {
-            $simpleab_sdk->trackMetricWithSegment([
-                'experimentID' => $a['experiment_id'],
-                'stage' => $a['stage'],
-                'segment' => $segment,
-                'treatment' => $treatment,
-                'metricName' => 'impression',
-                'metricValue' => 1,
-                'aggregationType' => 'sum'
-            ]);
-            simpleab_debug_log("Impression tracked successfully");
-        } catch (Exception $e) {
-            simpleab_debug_log("Error tracking impression: " . $e->getMessage());
-        }
 
         // Generate HTML for each variant
         foreach ($variants as $index => $variant) {
@@ -237,27 +211,14 @@ function simpleab_segment_shortcode($atts, $content = null) {
 
     $output .= "</div>";
 
-    // JavaScript for client-side metric tracking
-    $output .= "<script>
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.simpleab-segment-experiment [data-simpleab-metric]').forEach(function(element) {
-                var metricName = element.dataset.simpleabMetric;
-                var aggregationType = element.dataset.simpleabAggregation || 'sum';
-                var metricValue = parseFloat(element.dataset.simpleabValue) || 1;
-                var events = element.dataset.simpleabEvents ? element.dataset.simpleabEvents.split(',') : ['click'];
-                var segmentData = " . wp_json_encode($segment) . ";
+    $script_data = array(
+        'ajax_url' => admin_url('admin-ajax.php'),
+        'nonce' => wp_create_nonce('simpleab_segment_track_metric')
+    );
+    wp_localize_script('simpleab-segment-metric-script', 'simpleab_segment_data', $script_data);
 
-                events.forEach(function(eventType) {
-                    element.addEventListener(eventType.trim(), function() {
-                        var xhr = new XMLHttpRequest();
-                        xhr.open('POST', '" . esc_js(admin_url('admin-ajax.php')) . "', true);
-                        xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
-                        xhr.send('action=simpleab_segment_track_metric&_wpnonce=" . wp_create_nonce('simpleab_segment_track_metric') . "&experiment_id=" . esc_js($a['experiment_id']) . "&stage=" . esc_js($a['stage']) . "&treatment=" . esc_js($treatment) . "&metric_name=' + encodeURIComponent(metricName) + '&metric_value=' + metricValue + '&aggregation_type=' + encodeURIComponent(aggregationType) + '&segment=' + encodeURIComponent(JSON.stringify(segmentData)));
-                    });
-                });
-            });
-        });
-    </script>";
+    // Enqueue the script
+    wp_enqueue_script('simpleab-segment-metric-script');
 
     // Restore wpautop after processing the shortcode
     add_filter('the_content', 'wpautop');
@@ -275,8 +236,6 @@ function simpleab_track_metric_ajax() {
     check_ajax_referer('simpleab_track_metric');
 
     global $simpleab_sdk;
-
-    simpleab_debug_log("AJAX metric tracking called with data: " . print_r($_POST, true));
 
     try {
         $simpleab_sdk->trackMetric([
@@ -305,21 +264,17 @@ function simpleab_segment_track_metric_ajax() {
 
     global $simpleab_sdk;
 
-    simpleab_debug_log("AJAX metric tracking called with data: " . print_r($_POST, true));
-
     if (isset($_POST['segment'])) {
         // Decode the JSON-encoded segment data
         $segment_json = sanitize_text_field(wp_unslash($_POST['segment']));
         $segment = json_decode($segment_json);
     
         // Debug to check if the segment was decoded properly
-        if (json_last_error() === JSON_ERROR_NONE) {
-            // Successfully parsed the segment
-            simpleab_debug_log('Segment decoded successfully: ' . print_r($segment, true));
-        } else {
+        if (json_last_error() !== JSON_ERROR_NONE) {
             // Handle JSON parsing error
             simpleab_debug_log('Error decoding segment: ' . json_last_error_msg());
         }
+
     }
 
     try {
@@ -349,8 +304,6 @@ function simpleab_track_segment_metric_ajax() {
 
     global $simpleab_sdk;
 
-    simpleab_debug_log("AJAX segment metric tracking called with data: " . print_r($_POST, true));
-
     try {
         $simpleab_sdk->trackSegmentMetric([
             'segmentID' => isset($_POST['segment_id']) ? sanitize_text_field(wp_unslash($_POST['segment_id'])) : '',
@@ -370,9 +323,3 @@ function simpleab_track_segment_metric_ajax() {
 }
 add_action('wp_ajax_simpleab_track_segment_metric', 'simpleab_track_segment_metric_ajax');
 add_action('wp_ajax_nopriv_simpleab_track_segment_metric', 'simpleab_track_segment_metric_ajax');
-
-// Load plugin textdomain
-function simpleab_load_textdomain() {
-    load_plugin_textdomain('simpleab', false, dirname(plugin_basename(__FILE__)) . '/languages/');
-}
-add_action('plugins_loaded', 'simpleab_load_textdomain');
