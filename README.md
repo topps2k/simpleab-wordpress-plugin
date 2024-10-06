@@ -13,8 +13,8 @@ This WordPress plugin integrates the SimpleAB PHP SDK for A/B/n testing into you
 
 ## Configuration
 
-1. After activation, go to the 'Settings' menu and click on 'SimpleAB'.
-2. Enter your SimpleAB API Key.
+1. After activation, go to the 'Settings' menu and click on 'Captchify Simple A/B'.
+2. Enter your Captchify Simple A/B API Key.
 3. Save the settings.
 
 ## Usage
@@ -35,13 +35,23 @@ Example:
 
 ```
 [simpleab_test experiment_id="exp_123" stage="Prod"]
-Variant A content
-||
-Variant B content
-||
 Variant C content
+||
+Variant T1 content
+||
+Variant T2 content
 [/simpleab_test]
 ```
+
+example with metrics:
+```
+[simpleab_test experiment_id="<Placeholder>" stage="Prod"]
+<button data-simpleab-metric="button_clicks" data-simpleab-aggregation="sum" data-simpleab-value="1" data-simpleab-events="click,focus">Click Me - C!</button>
+||
+<button data-simpleab-metric="button_clicks" data-simpleab-aggregation="sum" data-simpleab-value="1" data-simpleab-events="click,focus">Click Me - T1!</button>
+[/simpleab_test]
+```
+
 
 #### 2. `[simpleab_test_custom]` (Dimension-based)
 
@@ -58,13 +68,22 @@ Example:
 [simpleab_test_custom experiment_id="exp_123" stage="Prod" dimension="desktop"]
 Variant A content
 ||
-Variant B content
+Variant T1 content
 ||
-Variant C content
+Variant T2 content
 [/simpleab_test_custom]
 ```
 
-For both shortcodes, use `||` to separate different variants. The first variant is considered the control (A), and subsequent variants are treated as B, C, D, etc.
+example with metrics:
+```
+[simpleab_test_custom experiment_id="<Placeholder>" stage="Prod"]
+<button data-simpleab-metric="button_clicks" data-simpleab-aggregation="sum" data-simpleab-value="1" data-simpleab-events="click,focus">Click Me - C!</button>
+||
+<button data-simpleab-metric="button_clicks" data-simpleab-aggregation="sum" data-simpleab-value="1" data-simpleab-events="click,focus">Click Me - T1!</button>
+[/simpleab_test_custom]
+```
+
+For both shortcodes, use `||` to separate different variants. The first variant is considered the control (C), and subsequent variants are treated as T1, T2, T3, etc.
 
 ### Client-side Metric Tracking
 
