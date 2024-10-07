@@ -136,7 +136,7 @@ function simpleab_ab_test_shortcode($atts, $content = null) {
 }
 add_shortcode('simpleab_test_custom', 'simpleab_ab_test_shortcode');
 
-function get_user_ip() {
+function simpleab_get_user_ip() {
     if (isset($_SERVER['HTTP_X_FORWARDED_FOR'])) {
         $ip = sanitize_text_field(wp_unslash($_SERVER['HTTP_X_FORWARDED_FOR']));
     } elseif (isset($_SERVER['REMOTE_ADDR'])) {
@@ -168,7 +168,7 @@ function simpleab_segment_shortcode($atts, $content = null) {
     // Get segment using PHP SDK
     try {
         $segment = $simpleab_sdk->getSegment([
-            'ip' => get_user_ip(),
+            'ip' => simpleab_get_user_ip(),
             'userAgent' => isset($_SERVER['HTTP_USER_AGENT']) ? sanitize_text_field(wp_unslash($_SERVER['HTTP_USER_AGENT'])) : ''
         ]);
 
