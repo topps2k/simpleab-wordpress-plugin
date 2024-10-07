@@ -260,7 +260,7 @@ class SimpleABSDK {
         $stageDimension = $this->findStageDimension($stageData, $dimension);
         $treatmentData = $this->findTreatment($experiment, $treatment);
 
-        $key = "{$experimentID}-{$stage}-{$dimension}-{$treatment}-{$metricName}-{$aggregationType}";
+        $key = "{$experimentID}|{$stage}|{$dimension}|{$treatment}|{$metricName}|{$aggregationType}";
 
         if (!isset($this->buffer[$key])) {
             $this->buffer[$key] = ['sum' => 0, 'count' => 0, 'values' => []];
@@ -303,7 +303,7 @@ class SimpleABSDK {
         $metricsBatch = [];
 
         foreach ($this->buffer as $key => $value) {
-            list($experimentID, $stage, $dimension, $treatment, $metricName, $aggregationType) = explode('-', $key);
+            list($experimentID, $stage, $dimension, $treatment, $metricName, $aggregationType) = explode('|', $key);
 
             if ($aggregationType === AggregationTypes::AVERAGE) {
                 $metricValue = $value['sum'] / $value['count'];

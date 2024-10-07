@@ -297,29 +297,3 @@ function simpleab_segment_track_metric_ajax() {
 }
 add_action('wp_ajax_simpleab_segment_track_metric', 'simpleab_segment_track_metric_ajax');
 add_action('wp_ajax_nopriv_simpleab_segment_track_metric', 'simpleab_segment_track_metric_ajax');
-
-// AJAX handler for tracking segment metrics
-function simpleab_track_segment_metric_ajax() {
-    check_ajax_referer('simpleab_track_segment_metric');
-
-    global $simpleab_sdk;
-
-    try {
-        $simpleab_sdk->trackSegmentMetric([
-            'segmentID' => isset($_POST['segment_id']) ? sanitize_text_field(wp_unslash($_POST['segment_id'])) : '',
-            'stage' => isset($_POST['stage']) ? sanitize_text_field(wp_unslash($_POST['stage'])) : '',
-            'segment' => isset($_POST['segment']) ? sanitize_text_field(wp_unslash($_POST['segment'])) : '',
-            'metricName' => isset($_POST['metric_name']) ? sanitize_text_field(wp_unslash($_POST['metric_name'])) : '',
-            'metricValue' => isset($_POST['metric_value']) ? floatval(wp_unslash($_POST['metric_value'])) : 0,
-            'aggregationType' => isset($_POST['aggregation_type']) ? sanitize_text_field(wp_unslash($_POST['aggregation_type'])) : ''
-        ]);
-        $simpleab_sdk->flush();
-        simpleab_debug_log("Segment metric tracked successfully via AJAX");
-    } catch (Exception $e) {
-        simpleab_debug_log("Error tracking segment metric via AJAX: " . $e->getMessage());
-    }
-
-    wp_die();
-}
-add_action('wp_ajax_simpleab_track_segment_metric', 'simpleab_track_segment_metric_ajax');
-add_action('wp_ajax_nopriv_simpleab_track_segment_metric', 'simpleab_track_segment_metric_ajax');
